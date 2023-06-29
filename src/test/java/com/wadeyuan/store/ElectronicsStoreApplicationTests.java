@@ -30,15 +30,24 @@ class ElectronicsStoreApplicationTests {
 	@Order(1)
 	void testCreateProduct() throws Exception {
 		// Arrange
-		String requestBody = "{\"name\": \"New Product\", \"price\": 9.99}";
+		String requestBodyA = "{\"name\": \"Product A\", \"price\": 9.99}";
+		String requestBodyB = "{\"name\": \"Product B\", \"price\": 29.99}";
 
 		// Act
 		mockMvc.perform(MockMvcRequestBuilders.post("/products")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(requestBody))
+						.content(requestBodyA))
 				// Assert
 				.andExpect(MockMvcResultMatchers.status().isCreated())
-				.andExpect(MockMvcResultMatchers.header().string("Location", Matchers.containsString("/products/")));
+				.andExpect(MockMvcResultMatchers.header().string("Location", Matchers.containsString("/products/")))
+				.andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Product A"))
+				.andExpect(MockMvcResultMatchers.jsonPath("$.price").value(9.99));
+
+		// Create another product
+		mockMvc.perform(MockMvcRequestBuilders.post("/products")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(requestBodyB))
+				.andReturn();
 	}
 
 	@Test
@@ -71,7 +80,7 @@ class ElectronicsStoreApplicationTests {
 	void testUpdateProduct() throws Exception {
 		// Arrange
 		long productId = 1;
-		String requestBody = "{\"name\": \"Updated Product\", \"price\": 19.99}";
+		String requestBody = "{\"name\": \"Updated Product A\", \"price\": 11.99}";
 
 		// Act
 		mockMvc.perform(MockMvcRequestBuilders.put("/products/{id}", productId)
@@ -79,8 +88,8 @@ class ElectronicsStoreApplicationTests {
 						.content(requestBody))
 				// Assert
 				.andExpect(MockMvcResultMatchers.status().isOk())
-				.andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Updated Product"))
-				.andExpect(MockMvcResultMatchers.jsonPath("$.price").value(19.99));
+				.andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Updated Product A"))
+				.andExpect(MockMvcResultMatchers.jsonPath("$.price").value(11.99));
 	}
 
 	@Test
@@ -103,6 +112,74 @@ class ElectronicsStoreApplicationTests {
 
 	@Test
 	@Order(6)
+	void testCreateShoppingCart() throws Exception {
+		// Arrange
+		String requestBody = "{\"items\": []}";
+
+		// Act
+		mockMvc.perform(MockMvcRequestBuilders.post("/shopping-carts")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				// Assert
+				.andExpect(MockMvcResultMatchers.status().isCreated())
+				.andExpect(MockMvcResultMatchers.header().string("Location", Matchers.containsString("/shopping-carts/")));
+	}
+
+	@Test
+	@Order(7)
+	void testAddProductToCart() throws Exception {
+		// Arrange
+		long shoppingCartId = 1;
+		long productId = 1;
+		int quantity = 2;
+
+		// Act
+		mockMvc.perform(MockMvcRequestBuilders.put("/shopping-carts/{shoppingCartId}/add/{productId}", shoppingCartId, productId)
+					.param("quantity", String.valueOf(quantity)))
+				// Assert
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.jsonPath("$.items", Matchers.hasSize(1)))
+				.andExpect(MockMvcResultMatchers.jsonPath("$.items[0].quantity").value(String.valueOf(quantity)));
+	}
+
+	@Test
+	@Order(8)
+	void testRemoveProductFromCart() throws Exception {
+		// Arrange
+		long shoppingCartId = 1;
+		long productId = 1;
+		int quantity = 1;
+
+		// Act
+		mockMvc.perform(MockMvcRequestBuilders.put("/shopping-carts/{shoppingCartId}/remove/{productId}", shoppingCartId, productId)
+						.param("quantity", String.valueOf(quantity)))
+				// Assert
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.jsonPath("$.items", Matchers.hasSize(1)))
+				.andExpect(MockMvcResultMatchers.jsonPath("$.items[0].quantity").value(String.valueOf(1)));
+
+		// Act
+		mockMvc.perform(MockMvcRequestBuilders.put("/shopping-carts/{shoppingCartId}/remove/{productId}", shoppingCartId, productId)
+						.param("quantity", String.valueOf(quantity)))
+				// Assert
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.jsonPath("$.items").isEmpty());
+	}
+
+	@Test
+	@Order(9)
+	void testDeleteShoppingCart() throws Exception {
+		// Arrange
+		long shoppingCartId = 1;
+
+		// Act
+		mockMvc.perform(MockMvcRequestBuilders.delete("/shopping-carts/{shoppingCartId}", shoppingCartId))
+				// Assert
+				.andExpect(MockMvcResultMatchers.status().isOk());
+	}
+
+	@Test
+	@Order(10)
 	void testDeleteDiscount() throws Exception {
 		// Arrange
 		long discountId = 1;

@@ -8,6 +8,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping(value = "/products")
@@ -34,6 +35,11 @@ public class ProductController {
         if(!productRepository.existsById(productId)) return ResponseEntity.notFound().build();
 
         return ResponseEntity.ok().body(productRepository.findById(productId).get());
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Product>> listProducts() {
+        return ResponseEntity.ok(productRepository.findAll());
     }
 
     @DeleteMapping(value = "/{productId}")

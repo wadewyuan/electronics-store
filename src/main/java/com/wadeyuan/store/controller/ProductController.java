@@ -31,30 +31,25 @@ public class ProductController {
 
     @GetMapping(value = "/{productId}")
     public ResponseEntity<Product> getProduct(@PathVariable Long productId) {
-        if(productRepository.existsById(productId)) {
-            return ResponseEntity.ok().body(productRepository.findById(productId).get());
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        if(!productRepository.existsById(productId)) return ResponseEntity.notFound().build();
+
+        return ResponseEntity.ok().body(productRepository.findById(productId).get());
     }
 
     @DeleteMapping(value = "/{productId}")
     public ResponseEntity<Long> deleteProduct(@PathVariable Long productId) {
-        if(productRepository.existsById(productId)) {
-            productRepository.deleteById(productId);
-            return ResponseEntity.ok().build();
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        if(!productRepository.existsById(productId)) return ResponseEntity.notFound().build();
+
+        productRepository.deleteById(productId);
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping(value = "/{productId}")
     public ResponseEntity<Product> updateProduct(@PathVariable Long productId, @RequestBody Product product) {
-        if(productRepository.existsById(productId)) {
-            Product updatedProduct = productRepository.save(product);
-            return ResponseEntity.ok(updatedProduct);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        if(!productRepository.existsById(productId)) return ResponseEntity.notFound().build();
+
+        product.setId(productId);
+        Product updatedProduct = productRepository.save(product);
+        return ResponseEntity.ok(updatedProduct);
     }
 }

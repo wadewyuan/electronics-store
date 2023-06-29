@@ -1,8 +1,8 @@
 package com.wadeyuan.store;
 
+import com.wadeyuan.store.constants.DiscountType;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 @SpringBootTest
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ElectronicsStoreApplicationTests {
 
 	@Autowired
@@ -26,6 +27,7 @@ class ElectronicsStoreApplicationTests {
 	}
 
 	@Test
+	@Order(1)
 	void testCreateProduct() throws Exception {
 		// Arrange
 		String requestBody = "{\"name\": \"New Product\", \"price\": 9.99}";
@@ -40,6 +42,7 @@ class ElectronicsStoreApplicationTests {
 	}
 
 	@Test
+	@Order(2)
 	void testGetProductById() throws Exception {
 		// Arrange
 		long productId = 1;
@@ -52,6 +55,7 @@ class ElectronicsStoreApplicationTests {
 	}
 
 	@Test
+	@Order(3)
 	void testGetProductByNonExistingId() throws Exception {
 		// Arrange
 		long productId = -999;
@@ -63,6 +67,7 @@ class ElectronicsStoreApplicationTests {
 	}
 
 	@Test
+	@Order(4)
 	void testUpdateProduct() throws Exception {
 		// Arrange
 		long productId = 1;
@@ -79,6 +84,37 @@ class ElectronicsStoreApplicationTests {
 	}
 
 	@Test
+	@Order(5)
+	void testApplySimpleDiscount() throws Exception {
+		// Arrange
+		long productId = 1;
+		int requiredQuantity = 1;
+		double percentageOff = 50.0;
+
+		// Act
+		mockMvc.perform(MockMvcRequestBuilders.post("/discounts/simpleDiscount/{productId}", productId)
+					.param("requiredQuantity", String.valueOf(requiredQuantity))
+					.param("percentageOff", String.valueOf(percentageOff)))
+				// Assert
+				.andExpect(MockMvcResultMatchers.status().isCreated())
+				.andExpect(MockMvcResultMatchers.header().string("Location", Matchers.containsString("/discounts/")))
+				.andExpect(MockMvcResultMatchers.jsonPath("$.discountType").value(String.valueOf(DiscountType.PERCENTAGE)));
+	}
+
+	@Test
+	@Order(6)
+	void testDeleteDiscount() throws Exception {
+		// Arrange
+		long discountId = 1;
+
+		// Act
+		mockMvc.perform(MockMvcRequestBuilders.delete("/discounts/{discountId}", discountId))
+				// Assert
+				.andExpect(MockMvcResultMatchers.status().isOk());
+	}
+
+	@Test
+	@Order(Integer.MAX_VALUE)
 	void testDeleteProduct() throws Exception {
 		// Arrange
 		long productId = 1;

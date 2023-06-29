@@ -33,7 +33,7 @@ public class DiscountController {
         return ResponseEntity.created(location).body(createdDiscount);
     }
 
-    @PostMapping(value = "/simpleDiscount/{productId}")
+    @PostMapping(value = "/simpleDiscount/product/{productId}")
     public ResponseEntity<Discount> createSimpleDiscount(@RequestParam Integer requiredQuantity, @RequestParam Double percentageOff, @PathVariable Long productId) {
         if(!productRepository.existsById(productId)) return ResponseEntity.badRequest().build();
 

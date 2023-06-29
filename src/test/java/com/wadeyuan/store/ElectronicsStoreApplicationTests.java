@@ -101,7 +101,7 @@ class ElectronicsStoreApplicationTests {
 		double percentageOff = 50.0;
 
 		// Act
-		mockMvc.perform(MockMvcRequestBuilders.post("/discounts/simpleDiscount/{productId}", productId)
+		mockMvc.perform(MockMvcRequestBuilders.post("/discounts/simpleDiscount/product/{productId}", productId)
 					.param("requiredQuantity", String.valueOf(requiredQuantity))
 					.param("percentageOff", String.valueOf(percentageOff)))
 				// Assert
@@ -168,6 +168,32 @@ class ElectronicsStoreApplicationTests {
 
 	@Test
 	@Order(9)
+	void testCalculateShoppingCartAmount() throws Exception {
+		// Arrange
+		long shoppingCartId = 1;
+		long productAId = 1;
+		long productBId = 2;
+		int quantityA = 2;
+		int quantityB = 1;
+		// Expected original total amount: 2 * 11.99 + 1 * 29.99 = 53.97
+		// Expected discount amount: 11.99 / 2 = 5.995
+		// Expected final amount: 49.97 - 4.995 = 47.975
+		mockMvc.perform(MockMvcRequestBuilders.put("/shopping-carts/{shoppingCartId}/add/{productId}", shoppingCartId, productAId)
+				.param("quantity", String.valueOf(quantityA)));
+		mockMvc.perform(MockMvcRequestBuilders.put("/shopping-carts/{shoppingCartId}/add/{productId}", shoppingCartId, productBId)
+				.param("quantity", String.valueOf(quantityB)));
+
+		// Act
+		mockMvc.perform(MockMvcRequestBuilders.get("/shopping-carts/{shoppingCartId}/calculate", shoppingCartId))
+				// Assert
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.jsonPath("$.totalAmount").value(53.97))
+				.andExpect(MockMvcResultMatchers.jsonPath("$.discountAmount").value(5.995))
+				.andExpect(MockMvcResultMatchers.jsonPath("$.finalAmount").value(47.975));
+	}
+
+	@Test
+	@Order(10)
 	void testDeleteShoppingCart() throws Exception {
 		// Arrange
 		long shoppingCartId = 1;
@@ -179,7 +205,7 @@ class ElectronicsStoreApplicationTests {
 	}
 
 	@Test
-	@Order(10)
+	@Order(11)
 	void testDeleteDiscount() throws Exception {
 		// Arrange
 		long discountId = 1;

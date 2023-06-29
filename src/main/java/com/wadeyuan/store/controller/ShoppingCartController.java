@@ -1,7 +1,11 @@
 package com.wadeyuan.store.controller;
 
+import com.wadeyuan.store.domain.CartItem;
+import com.wadeyuan.store.domain.Discount;
 import com.wadeyuan.store.domain.Product;
 import com.wadeyuan.store.domain.ShoppingCart;
+import com.wadeyuan.store.dto.ShoppingCartDTO;
+import com.wadeyuan.store.repository.DiscountRepository;
 import com.wadeyuan.store.repository.ProductRepository;
 import com.wadeyuan.store.repository.ShoppingCartRepository;
 import org.springframework.http.ResponseEntity;
@@ -9,16 +13,19 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequestMapping(value = "/shopping-carts")
 public class ShoppingCartController {
     private final ShoppingCartRepository shoppingCartRepository;
     private final ProductRepository productRepository;
+    private final DiscountRepository discountRepository;
 
-    public ShoppingCartController(ShoppingCartRepository shoppingCartRepository, ProductRepository productRepository) {
+    public ShoppingCartController(ShoppingCartRepository shoppingCartRepository, ProductRepository productRepository, DiscountRepository discountRepository) {
         this.shoppingCartRepository = shoppingCartRepository;
         this.productRepository = productRepository;
+        this.discountRepository = discountRepository;
     }
 
     @PostMapping
@@ -68,5 +75,52 @@ public class ShoppingCartController {
 
         shoppingCartRepository.deleteById(shoppingCartId);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping(value = "/{shoppingCartId}/calculate")
+    public ResponseEntity<ShoppingCartDTO> viewCart(@PathVariable Long shoppingCartId) {
+        if(!shoppingCartRepository.existsById(shoppingCartId)) return ResponseEntity.notFound().build();
+
+        ShoppingCart cart = shoppingCartRepository.findById(shoppingCartId).get();
+        Double totalAmount = 0.0;
+        Double discountAmount = 0.0;
+        for (CartItem item : cart.getItems()) {
+            Product product = item.getProduct();
+            totalAmount += item.getQuantity() * product.getPrice();
+            List<Discount> discounts = discountRepository.findDiscountsByTargetProductAndEnabledIsTrue(product);
+
+            if (discounts == null || discounts.size() == 0) continue;
+
+            Double maxDiscount = 0.0;
+            for (Discount discount : discounts) {
+                Product requiredProduct = discount.getRequiredProduct();
+                int discountedProducts = 0;
+                int requiredQuantity = discount.getRequiredQuantity();
+                if (!requiredProduct.equals(product)) {
+                    CartItem requiredItem = cart.getCarItemByProduct(requiredProduct);
+                    if(requiredItem == null || requiredItem.getQuantity() < requiredQuantity) continue;
+
+                    discountedProducts = item.getQuantity();
+                } else {
+                    if(item.getQuantity() <= requiredQuantity) continue;
+                    discountedProducts = item.getQuantity() - requiredQuantity;
+                }
+
+                switch (discount.getDiscountType()) {
+                    case AMOUNT -> maxDiscount = Math.max(maxDiscount, discountedProducts * discount.getDiscountValue());
+                    case PERCENTAGE -> maxDiscount = Math.max(maxDiscount, discountedProducts * discount.getDiscountValue() * product.getPrice() / 100);
+                }
+            }
+            discountAmount += maxDiscount;
+        }
+
+        ShoppingCartDTO dto = new ShoppingCartDTO();
+        dto.setId(cart.getId());
+        dto.setItems(cart.getItems());
+        dto.setTotalAmount(totalAmount);
+        dto.setDiscountAmount(discountAmount);
+        dto.setFinalAmount(totalAmount - discountAmount);
+
+        return ResponseEntity.ok(dto);
     }
 }

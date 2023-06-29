@@ -37,10 +37,7 @@ public class ShoppingCart {
     }
 
     public void addToCart(Product product, int quantity) {
-        CartItem cartItem = items.stream()
-                .filter(item -> item.getProduct().equals(product))
-                .findFirst()
-                .orElse(null);
+        CartItem cartItem = getCarItemByProduct(product);
         if(cartItem != null) {
             cartItem.setQuantity(cartItem.getQuantity() + quantity);
             return;
@@ -52,10 +49,7 @@ public class ShoppingCart {
     }
 
     public void removeFromCart(Product product, int quantity) {
-        CartItem cartItem = items.stream()
-                .filter(item -> item.getProduct().equals(product))
-                .findFirst()
-                .orElse(null);
+        CartItem cartItem = getCarItemByProduct(product);
         if(cartItem == null) return;
 
         int newQuantity = cartItem.getQuantity() - quantity;
@@ -64,6 +58,12 @@ public class ShoppingCart {
         } else {
             cartItem.setQuantity(newQuantity);
         }
+    }
+
+    public CartItem getCarItemByProduct(Product product) {
+        return items.stream().filter(item -> item.getProduct().equals(product))
+                .findFirst()
+                .orElse(null);
     }
 
     @Override

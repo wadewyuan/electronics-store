@@ -177,7 +177,7 @@ class ElectronicsStoreApplicationTests {
 		int quantityB = 1;
 		// Expected original total amount: 2 * 11.99 + 1 * 29.99 = 53.97
 		// Expected discount amount: 11.99 / 2 = 5.995
-		// Expected final amount: 49.97 - 4.995 = 47.975
+		// Expected final amount: 53.97 - 5.995 = 47.975
 		mockMvc.perform(MockMvcRequestBuilders.put("/shopping-carts/{shoppingCartId}/add/{productId}", shoppingCartId, productAId)
 				.param("quantity", String.valueOf(quantityA)));
 		mockMvc.perform(MockMvcRequestBuilders.put("/shopping-carts/{shoppingCartId}/add/{productId}", shoppingCartId, productBId)
@@ -194,6 +194,64 @@ class ElectronicsStoreApplicationTests {
 
 	@Test
 	@Order(10)
+	void testCreateComplexDiscount() throws Exception {
+		// Arrange
+		String requestBody = """
+				{
+					"requiredProduct": {
+						"id": 2
+					},
+					"requiredQuantity": 1,
+					"targetProduct": {
+						"id": 1
+					},
+					"discountType": "AMOUNT",
+					"discountValue": 15.0,
+					"enabled": true
+				}""";
+
+		// Act
+		mockMvc.perform(MockMvcRequestBuilders.post("/discounts")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(requestBody))
+				// Assert
+				.andExpect(MockMvcResultMatchers.status().isCreated())
+				.andExpect(MockMvcResultMatchers.header().string("Location", Matchers.containsString("/discounts/")))
+				.andExpect(MockMvcResultMatchers.jsonPath("$.discountType").value(String.valueOf(DiscountType.AMOUNT)));
+	}
+
+	@Test
+	@Order(11)
+	void testCalculateShoppingCartAmountWithMultipleDiscounts() throws Exception {
+		// Arrange
+		long shoppingCartId = 1;
+		// Expected original total amount: 2 * 11.99 + 1 * 29.99 = 53.97
+		// Expected discount amount: 15.0 (in above test case we've applied another discount rule with more amount)
+		// Expected final amount: 53.97 - 15.0 = 38.97
+
+		// Act
+		mockMvc.perform(MockMvcRequestBuilders.get("/shopping-carts/{shoppingCartId}/calculate", shoppingCartId))
+				// Assert
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.jsonPath("$.totalAmount").value(53.97))
+				.andExpect(MockMvcResultMatchers.jsonPath("$.discountAmount").value(15.0))
+				.andExpect(MockMvcResultMatchers.jsonPath("$.finalAmount").value(38.97));
+	}
+
+	@Test
+	@Order(12)
+	void testClearShoppingCart() throws Exception {
+		// Arrange
+		long shoppingCartId = 1;
+
+		// Act
+		mockMvc.perform(MockMvcRequestBuilders.put("/shopping-carts/{shoppingCartId}/clear", shoppingCartId))
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.jsonPath("$.items").isEmpty());
+	}
+
+	@Test
+	@Order(13)
 	void testDeleteShoppingCart() throws Exception {
 		// Arrange
 		long shoppingCartId = 1;
@@ -205,13 +263,18 @@ class ElectronicsStoreApplicationTests {
 	}
 
 	@Test
-	@Order(11)
+	@Order(14)
 	void testDeleteDiscount() throws Exception {
 		// Arrange
-		long discountId = 1;
+		long discountIdA = 1;
+		long discountIdB = 2;
 
 		// Act
-		mockMvc.perform(MockMvcRequestBuilders.delete("/discounts/{discountId}", discountId))
+		mockMvc.perform(MockMvcRequestBuilders.delete("/discounts/{discountId}", discountIdA))
+				// Assert
+				.andExpect(MockMvcResultMatchers.status().isOk());
+		// Act
+		mockMvc.perform(MockMvcRequestBuilders.delete("/discounts/{discountId}", discountIdB))
 				// Assert
 				.andExpect(MockMvcResultMatchers.status().isOk());
 	}

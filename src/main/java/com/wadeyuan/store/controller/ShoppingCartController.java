@@ -70,6 +70,15 @@ public class ShoppingCartController {
         return ResponseEntity.ok(shoppingCartRepository.save(shoppingCart));
     }
 
+    @PutMapping(value = "/{shoppingCartId}/clear")
+    public ResponseEntity<ShoppingCart> clearCart(@PathVariable Long shoppingCartId) {
+        if(!shoppingCartRepository.existsById(shoppingCartId)) return ResponseEntity.notFound().build();
+
+        ShoppingCart shoppingCart = shoppingCartRepository.findById(shoppingCartId).get();
+        shoppingCart.getItems().clear();
+        return ResponseEntity.ok(shoppingCartRepository.save(shoppingCart));
+    }
+
     @DeleteMapping(value = "/{shoppingCartId}")
     public ResponseEntity<ShoppingCart> deleteShoppingCart(@PathVariable Long shoppingCartId) {
         if(!shoppingCartRepository.existsById(shoppingCartId)) return ResponseEntity.notFound().build();
@@ -137,7 +146,7 @@ public class ShoppingCartController {
         }
         // Calculate the discount amount
         switch (discount.getDiscountType()) {
-            case AMOUNT -> discountAmount = discount.getDiscountValue().multiply(BigDecimal.valueOf(discountableProductQuantity));
+            case AMOUNT -> discountAmount = discount.getDiscountValue();
             case PERCENTAGE -> discountAmount = discount.getDiscountValue().multiply(BigDecimal.valueOf(discountableProductQuantity)).multiply(product.getPrice()).divide(BigDecimal.valueOf(100));
         }
 

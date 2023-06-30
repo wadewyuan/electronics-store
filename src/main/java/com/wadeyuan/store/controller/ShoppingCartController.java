@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 
@@ -82,16 +83,16 @@ public class ShoppingCartController {
         if(!shoppingCartRepository.existsById(shoppingCartId)) return ResponseEntity.notFound().build();
 
         ShoppingCart cart = shoppingCartRepository.findById(shoppingCartId).get();
-        Double totalAmount = 0.0;
-        Double discountAmount = 0.0;
+        BigDecimal totalAmount = BigDecimal.valueOf(0.0);
+        BigDecimal discountAmount = BigDecimal.valueOf(0.0);
         for (CartItem item : cart.getItems()) {
             Product product = item.getProduct();
-            totalAmount += item.getQuantity() * product.getPrice();
+            totalAmount = totalAmount.add(product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
             List<Discount> discounts = discountRepository.findDiscountsByTargetProductAndEnabledIsTrue(product);
 
             if (discounts == null || discounts.size() == 0) continue;
 
-            Double maxDiscount = 0.0;
+            BigDecimal maxDiscount = BigDecimal.valueOf(0.0);
             for (Discount discount : discounts) {
                 Product requiredProduct = discount.getRequiredProduct();
                 int discountedProducts = 0;
@@ -107,11 +108,11 @@ public class ShoppingCartController {
                 }
 
                 switch (discount.getDiscountType()) {
-                    case AMOUNT -> maxDiscount = Math.max(maxDiscount, discountedProducts * discount.getDiscountValue());
-                    case PERCENTAGE -> maxDiscount = Math.max(maxDiscount, discountedProducts * discount.getDiscountValue() * product.getPrice() / 100);
+                    case AMOUNT -> maxDiscount = maxDiscount.max(discount.getDiscountValue().multiply(BigDecimal.valueOf(discountedProducts)));
+                    case PERCENTAGE -> maxDiscount = maxDiscount.max(discount.getDiscountValue().multiply(BigDecimal.valueOf(discountedProducts)).multiply(product.getPrice()).divide(BigDecimal.valueOf(100)));
                 }
             }
-            discountAmount += maxDiscount;
+            discountAmount = discountAmount.add(maxDiscount);
         }
 
         ShoppingCartDTO dto = new ShoppingCartDTO();
@@ -119,7 +120,7 @@ public class ShoppingCartController {
         dto.setItems(cart.getItems());
         dto.setTotalAmount(totalAmount);
         dto.setDiscountAmount(discountAmount);
-        dto.setFinalAmount(totalAmount - discountAmount);
+        dto.setFinalAmount(totalAmount.subtract(discountAmount));
 
         return ResponseEntity.ok(dto);
     }

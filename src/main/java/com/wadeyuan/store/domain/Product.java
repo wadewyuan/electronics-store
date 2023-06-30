@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.NotBlank;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Objects;
 @Entity
@@ -16,12 +17,12 @@ public class Product {
     private long id;
     @NotBlank(message = "Name is mandatory")
     private String name;
-    private double price;
+    private BigDecimal price;
     private LocalDateTime createdTimestamp;
 
     public Product() {}
 
-    public Product(long id, String name, double price, LocalDateTime createdTimestamp) {
+    public Product(long id, String name, BigDecimal price, LocalDateTime createdTimestamp) {
         this.id = id;
         this.name = name;
         this.price = price;
@@ -44,11 +45,11 @@ public class Product {
         this.name = name;
     }
 
-    public double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public void setPrice(double price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
     }
 
@@ -66,7 +67,7 @@ public class Product {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Product product = (Product) o;
-        return id == product.id && Double.compare(product.price, price) == 0 && name.equals(product.name) && Objects.equals(createdTimestamp, product.createdTimestamp);
+        return id == product.id && price.equals(product.price) && name.equals(product.name) && Objects.equals(createdTimestamp, product.createdTimestamp);
     }
 
     @Override

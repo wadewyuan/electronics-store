@@ -4,6 +4,7 @@ import com.wadeyuan.store.constants.DiscountType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 
 @Entity
@@ -18,13 +19,12 @@ public class Discount {
     @ManyToOne
     private Product targetProduct;
     private DiscountType discountType;
-    @Min(0)
-    private double discountValue;
+    private BigDecimal discountValue;
     private boolean enabled;
 
     public Discount() {}
 
-    public Discount(long id, Product requiredProduct, int requiredQuantity, Product targetProduct, DiscountType discountType, double discountValue, boolean enabled) {
+    public Discount(long id, Product requiredProduct, int requiredQuantity, Product targetProduct, DiscountType discountType, BigDecimal discountValue, boolean enabled) {
         this.id = id;
         this.requiredProduct = requiredProduct;
         this.requiredQuantity = requiredQuantity;
@@ -74,11 +74,11 @@ public class Discount {
         this.discountType = discountType;
     }
 
-    public double getDiscountValue() {
+    public BigDecimal getDiscountValue() {
         return discountValue;
     }
 
-    public void setDiscountValue(double discountValue) {
+    public void setDiscountValue(BigDecimal discountValue) {
         this.discountValue = discountValue;
     }
 
@@ -95,7 +95,7 @@ public class Discount {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Discount discount = (Discount) o;
-        return id == discount.id && requiredQuantity == discount.requiredQuantity && Double.compare(discount.discountValue, discountValue) == 0 && enabled == discount.enabled && requiredProduct.equals(discount.requiredProduct) && targetProduct.equals(discount.targetProduct) && discountType == discount.discountType;
+        return id == discount.id && requiredQuantity == discount.requiredQuantity && discountValue.equals(discount.discountValue) && enabled == discount.enabled && requiredProduct.equals(discount.requiredProduct) && targetProduct.equals(discount.targetProduct) && discountType == discount.discountType;
     }
 
     @Override

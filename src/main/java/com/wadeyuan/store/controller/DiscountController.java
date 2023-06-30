@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.math.BigDecimal;
 import java.net.URI;
 
 @RestController
@@ -34,7 +35,7 @@ public class DiscountController {
     }
 
     @PostMapping(value = "/simpleDiscount/product/{productId}")
-    public ResponseEntity<Discount> createSimpleDiscount(@RequestParam Integer requiredQuantity, @RequestParam Double percentageOff, @PathVariable Long productId) {
+    public ResponseEntity<Discount> createSimpleDiscount(@RequestParam Integer requiredQuantity, @RequestParam BigDecimal percentageOff, @PathVariable Long productId) {
         if(!productRepository.existsById(productId)) return ResponseEntity.badRequest().build();
 
         /*

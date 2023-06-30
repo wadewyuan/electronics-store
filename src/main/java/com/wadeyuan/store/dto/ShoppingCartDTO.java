@@ -2,14 +2,15 @@ package com.wadeyuan.store.dto;
 
 import com.wadeyuan.store.domain.CartItem;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public class ShoppingCartDTO {
     private long id;
     private List<CartItem> items;
-    private double discountAmount;
-    private double totalAmount;
-    private double finalAmount;
+    private BigDecimal discountAmount;
+    private BigDecimal totalAmount;
+    private BigDecimal finalAmount;
 
     public long getId() {
         return id;
@@ -27,27 +28,27 @@ public class ShoppingCartDTO {
         this.items = items;
     }
 
-    public double getDiscountAmount() {
+    public BigDecimal getDiscountAmount() {
         return discountAmount;
     }
 
-    public void setDiscountAmount(double discountAmount) {
+    public void setDiscountAmount(BigDecimal discountAmount) {
         this.discountAmount = discountAmount;
     }
 
-    public double getTotalAmount() {
+    public BigDecimal getTotalAmount() {
         return totalAmount;
     }
 
-    public void setTotalAmount(double totalAmount) {
+    public void setTotalAmount(BigDecimal totalAmount) {
         this.totalAmount = totalAmount;
     }
 
-    public double getFinalAmount() {
+    public BigDecimal getFinalAmount() {
         return finalAmount;
     }
 
-    public void setFinalAmount(double finalAmount) {
+    public void setFinalAmount(BigDecimal finalAmount) {
         this.finalAmount = finalAmount;
     }
 

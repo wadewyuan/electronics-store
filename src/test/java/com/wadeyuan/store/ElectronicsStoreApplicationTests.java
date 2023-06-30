@@ -252,6 +252,19 @@ class ElectronicsStoreApplicationTests {
 
 	@Test
 	@Order(13)
+	void testGetShoppingCart() throws Exception {
+		// Arrange
+		long shoppingCartId = 1;
+
+		// Act
+		mockMvc.perform(MockMvcRequestBuilders.get("/shopping-carts/{shoppingCartId}", shoppingCartId))
+				// Assert
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.jsonPath("$.id").value(shoppingCartId));
+	}
+
+	@Test
+	@Order(14)
 	void testDeleteShoppingCart() throws Exception {
 		// Arrange
 		long shoppingCartId = 1;
@@ -263,7 +276,7 @@ class ElectronicsStoreApplicationTests {
 	}
 
 	@Test
-	@Order(14)
+	@Order(15)
 	void testDeleteDiscount() throws Exception {
 		// Arrange
 		long discountIdA = 1;
@@ -277,6 +290,16 @@ class ElectronicsStoreApplicationTests {
 		mockMvc.perform(MockMvcRequestBuilders.delete("/discounts/{discountId}", discountIdB))
 				// Assert
 				.andExpect(MockMvcResultMatchers.status().isOk());
+	}
+
+	@Test
+	@Order(16)
+	void testListProduct() throws Exception {
+		// Act
+		mockMvc.perform(MockMvcRequestBuilders.get("/products"))
+				// Assert
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.jsonPath("$", Matchers.hasSize(2)));
 	}
 
 	@Test

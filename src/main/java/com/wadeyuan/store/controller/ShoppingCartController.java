@@ -83,45 +83,64 @@ public class ShoppingCartController {
         if(!shoppingCartRepository.existsById(shoppingCartId)) return ResponseEntity.notFound().build();
 
         ShoppingCart cart = shoppingCartRepository.findById(shoppingCartId).get();
-        BigDecimal totalAmount = BigDecimal.valueOf(0.0);
-        BigDecimal discountAmount = BigDecimal.valueOf(0.0);
+        BigDecimal totalAmount = BigDecimal.ZERO; // Calculated by all cart items original price
+        BigDecimal discountAmount = BigDecimal.ZERO; // Calculated by all cart items discount (if any)
+
         for (CartItem item : cart.getItems()) {
             Product product = item.getProduct();
-            totalAmount = totalAmount.add(product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
-            List<Discount> discounts = discountRepository.findDiscountsByTargetProductAndEnabledIsTrue(product);
 
-            if (discounts == null || discounts.size() == 0) continue;
+            // Accumulate to the total amount of the entire cart
+            BigDecimal cartItemAmount = product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())); // Amount of current cart item
+            totalAmount = totalAmount.add(cartItemAmount);
 
-            BigDecimal maxDiscount = BigDecimal.valueOf(0.0);
-            for (Discount discount : discounts) {
-                Product requiredProduct = discount.getRequiredProduct();
-                int discountedProducts = 0;
-                int requiredQuantity = discount.getRequiredQuantity();
-                if (!requiredProduct.equals(product)) {
-                    CartItem requiredItem = cart.getCarItemByProduct(requiredProduct);
-                    if(requiredItem == null || requiredItem.getQuantity() < requiredQuantity) continue;
-
-                    discountedProducts = item.getQuantity();
-                } else {
-                    if(item.getQuantity() <= requiredQuantity) continue;
-                    discountedProducts = item.getQuantity() - requiredQuantity;
-                }
-
-                switch (discount.getDiscountType()) {
-                    case AMOUNT -> maxDiscount = maxDiscount.max(discount.getDiscountValue().multiply(BigDecimal.valueOf(discountedProducts)));
-                    case PERCENTAGE -> maxDiscount = maxDiscount.max(discount.getDiscountValue().multiply(BigDecimal.valueOf(discountedProducts)).multiply(product.getPrice()).divide(BigDecimal.valueOf(100)));
-                }
-            }
-            discountAmount = discountAmount.add(maxDiscount);
+            // Accumulate to the total discount amount of the entire cart, additional comparison to the cartItemAmount, because the discount of one item shouldn't exceed its amount
+            BigDecimal cartItemDiscount = calculateDiscountOfCartItem(item, cart);
+            discountAmount = discountAmount.add(cartItemDiscount.min(cartItemAmount));
         }
 
-        ShoppingCartDTO dto = new ShoppingCartDTO();
-        dto.setId(cart.getId());
-        dto.setItems(cart.getItems());
+        ShoppingCartDTO dto = new ShoppingCartDTO(cart.getId(), cart.getItems());
         dto.setTotalAmount(totalAmount);
         dto.setDiscountAmount(discountAmount);
         dto.setFinalAmount(totalAmount.subtract(discountAmount));
 
         return ResponseEntity.ok(dto);
+    }
+
+    private BigDecimal calculateDiscountOfCartItem(CartItem item, ShoppingCart cart) {
+        // Find all discounts that are applied to the current product
+        List<Discount> discounts = discountRepository.findDiscountsByTargetProductAndEnabledIsTrue(item.getProduct());
+
+        return discounts.stream()
+                .map(discount -> calculateDiscountAmountFromDiscountRule(item, cart, discount)) // Calculate the amount of each discount rule applied to current item
+                .max(BigDecimal::compareTo) // We choose the maximum discount for the item
+                .orElse(BigDecimal.ZERO); // If nothing find, return zero
+    }
+
+    private BigDecimal calculateDiscountAmountFromDiscountRule(CartItem item, ShoppingCart cart, Discount discount) {
+        Product product = item.getProduct();
+        Product requiredProductInCart = discount.getRequiredProduct();
+        BigDecimal discountAmount = BigDecimal.ZERO;
+
+        int discountableProductQuantity; // To calculate the number of discountable products in current cart item
+        int requiredQuantity = discount.getRequiredQuantity();
+        if (!requiredProductInCart.equals(product)) {
+            // If the discount rule requires some other products in cart, we'll check whether there are sufficient number of required product to apply discount
+            CartItem requiredItem = cart.getCarItemByProduct(requiredProductInCart);
+            if(requiredItem == null || requiredItem.getQuantity() < requiredQuantity) return discountAmount;
+
+            discountableProductQuantity = item.getQuantity();
+        } else {
+            // If the discount rule requires the same product (typically by x and the remaining y can get z% off), we'll calculate the discountable products
+            if(item.getQuantity() <= requiredQuantity) return discountAmount;
+
+            discountableProductQuantity = item.getQuantity() - requiredQuantity;
+        }
+        // Calculate the discount amount
+        switch (discount.getDiscountType()) {
+            case AMOUNT -> discountAmount = discount.getDiscountValue().multiply(BigDecimal.valueOf(discountableProductQuantity));
+            case PERCENTAGE -> discountAmount = discount.getDiscountValue().multiply(BigDecimal.valueOf(discountableProductQuantity)).multiply(product.getPrice()).divide(BigDecimal.valueOf(100));
+        }
+
+        return discountAmount;
     }
 }

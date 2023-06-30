@@ -12,6 +12,11 @@ public class ShoppingCartDTO {
     private BigDecimal totalAmount;
     private BigDecimal finalAmount;
 
+    public ShoppingCartDTO(long id, List<CartItem> items) {
+        this.id = id;
+        this.items = items;
+    }
+
     public long getId() {
         return id;
     }
